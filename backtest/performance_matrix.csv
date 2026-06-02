@@ -1,0 +1,11 @@
+Strategy,Threshold,Hedge Count,Avg Hedging Error,Transaction Cost,Final PnL
+Short Straddle (MM),0.01,203,0.0135,$369.42,$-7827.80
+Short Straddle (MM),0.05,127,0.0509,$334.56,$-11779.80
+Short Straddle (MM),0.1,75,0.0693,$284.23,$-13951.58
+Short Straddle (MM),0.25,21,0.0299,$155.80,$-8009.23
+Short Straddle (MM),0.5,9,0.3640,$106.49,$-41108.41
+Long Scalper,0.01,203,0.0135,$369.42,$7089.01
+Long Scalper,0.05,127,0.0509,$334.56,$11110.70
+Long Scalper,0.1,75,0.0693,$284.23,$13383.15
+Long Scalper,0.25,21,0.0299,$155.80,$7697.60
+Long Scalper,0.5,9,0.3640,$106.49,$40895.41

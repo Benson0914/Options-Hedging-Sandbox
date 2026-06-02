@@ -12,7 +12,7 @@ class Delta_Hedging:
         self.sigma = float(sigma)
         self.r = float(rate)
 
-    def run_delta_hedging(self, spot_grid, strike, time_grid, position_size, current_perp_inventory, delta_threshold = 0.15):
+    def run_delta_hedging(self, spot_grid, strike, time_grid, position_size, current_perp_inventory=0.0, delta_threshold = 0.15):
         hedge_log = []
         total_steps = len(spot_grid)
         
@@ -24,12 +24,14 @@ class Delta_Hedging:
 
         total_fees_paid = 0.0
         total_slippage_cost = 0.0
+        hedge_count = 0
+        hedging_errors = []
+        
         last_options_value = None
         last_spot = None
 
         for step in range(total_steps):
             Spots = spot_grid.iloc[step]
-            Time = time_grid.iloc[step]
             time_left = self.T * (1 - (step / total_steps))
 
             if time_left <= 0: time_left = 1e-6
@@ -44,14 +46,14 @@ class Delta_Hedging:
             current_options_value = current_straddle_price * (-position_size)
 
             portfolio_delta = (call_metrics['delta'] * call_position) + (put_metrics['delta'] * put_position)
-            target_perp_inventory = -portfolio_delta
-
+            
             total_delta_exposure = portfolio_delta + current_perp_inventory
+            hedging_errors.append(abs(total_delta_exposure))
 
             perp_trade_required = 0.0
-
             if abs(total_delta_exposure) > delta_threshold:
                 perp_trade_required = -total_delta_exposure
+                hedge_count += 1
 
             options_pnl = 0.0
             perp_pnl = 0.0
@@ -68,11 +70,12 @@ class Delta_Hedging:
                 
                 total_fees_paid += step_fee
                 total_slippage_cost += step_slippage
+                
+                current_perp_inventory += perp_trade_required
 
             step_raw_pnl = options_pnl + perp_pnl
             step_net_pnl = step_raw_pnl - step_fee - step_slippage
 
-            current_perp_inventory = target_perp_inventory
             last_options_value = current_options_value
             last_spot = Spots
 
@@ -80,6 +83,7 @@ class Delta_Hedging:
                 "Time Step": step + 1,
                 "BTC Spot": Spots,
                 "Net Options Delta": round(portfolio_delta, 4),
+                "Current Perp Inventory": round(current_perp_inventory, 4),
                 "Trade Executed (Perps)": round(perp_trade_required, 4),
                 "Options PnL": round(options_pnl, 2),
                 "Perp PnL": round(perp_pnl, 2),
@@ -93,8 +97,14 @@ class Delta_Hedging:
 
         df['Cumulative Raw PnL'] = df['Raw PnL (No Cost)'].cumsum()
         df['Cumulative Net PnL'] = df['Net PnL (After Cost)'].cumsum()
-        return df
 
+        metrics_summary = {
+            "hedge_count": hedge_count,
+            "avg_hedging_error": np.mean(hedging_errors),
+            "total_tx_cost": total_fees_paid + total_slippage_cost
+        }
+        
+        return df, metrics_summary
 
 if __name__ == '__main__':
     data_client = DataFetching()

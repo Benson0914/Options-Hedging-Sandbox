@@ -25,6 +25,8 @@ class Gamma_Scalping:
 
         total_fees_paid = 0.0
         total_slippage_cost = 0.0
+        hedge_count = 0
+        hedging_errors = []
         last_options_value = None
         last_spot = None
         
@@ -47,11 +49,13 @@ class Gamma_Scalping:
 
             portfolio_delta = (call_metrics['delta'] * call_position) + (put_metrics['delta'] * put_position)
             total_delta_exposure = portfolio_delta + current_perp_inventory
+            hedging_errors.append(abs(total_delta_exposure))
 
             perp_trade_required = 0.0
 
             if abs(total_delta_exposure) > delta_threshold:
-                perp_trade_required = -total_delta_exposure 
+                perp_trade_required = -total_delta_exposure
+                hedge_count += 1
 
             options_pnl = 0.0
             perp_pnl = 0.0
@@ -94,4 +98,11 @@ class Gamma_Scalping:
         df = pd.DataFrame(hedge_log)
         df['Cumulative Raw PnL'] = df['Raw PnL (No Cost)'].cumsum()
         df['Cumulative Net PnL'] = df['Net PnL (After Cost)'].cumsum()
-        return df
+        
+        metrics_summary = {
+            "hedge_count": hedge_count,
+            "avg_hedging_error": np.mean(hedging_errors),
+            "total_tx_cost": total_fees_paid + total_slippage_cost
+        }
+        
+        return df, metrics_summary
