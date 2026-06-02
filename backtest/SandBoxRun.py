@@ -74,13 +74,12 @@ if __name__ == '__main__':
     print(perf_matrix.to_string(index=False))
     print("="*80 + "\n")
     
-    # 也可以順手存成 CSV 丟上 GitHub
     perf_matrix.to_csv('backtest/performance_matrix.csv', index=False)
     print("Imported backtest/performance_matrix.csv")
 
-    # 渲染圖表
     plt.axhline(0, color='black', linestyle='-', alpha=0.3)
     plt.title('Sandbox Arena PnL Tracking')
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
+    plt.savefig('figures/PnL_SandboxData.png')
     plt.show()
