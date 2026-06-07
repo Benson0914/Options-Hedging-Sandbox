@@ -109,6 +109,43 @@ The results highlight an important practical observation:
 
 **More hedging is not necessarily better hedging.**
 
+## 1/6/2026 - 4/6/2026 Crypto Big Drawdown Backtesting
+
+Recent BTC drop from $74000 to $64000 in June and in high volatility.
+Which provided an interesting stress test for a delta-hedged options.
+
+My initial expectation was straightforward:
+Lower thresholds → more hedging, higher transaction costs
+Higher thresholds → fewer hedges, lower transaction costs
+
+However, the results revealed something more interesting.
+
+Under moderate thresholds (0.01–0.10), reducing hedge frequency had limited impact on overall PnL:
+| Threshold | Short Straddle PnL |
+|-----------|--------------------|
+| 0.01          | +277   |
+| 0.05          | +291   |
+| 0.10          | +265   |
+
+But beyond a certain point, the dominant risk changed.
+
+| Threshold | Short Straddle PnL |
+|-----------|--------------------|
+| 0.25          | -744   |
+| 0.50          | -2526|
+
+The issue was no longer transaction costs. It became unhedged gamma exposure.
+During large realized moves, the savings from reduced hedging were overwhelmed by accumulated directional risk.
+
+Interestingly, the same regime shift produced the opposite effect for long gamma strategies:
+
+| Threshold | Long Gamma PnL |
+|-----------|--------------------|
+| 0.25          | +711   |
+| 0.50          | +2504 |
+
+![alt text](figures/First_June_Backtest.png "First_June_Backtest")
+
 ## **Delta Hedging**
 
 The simulator dynamically rebalances perpetual futures positions to offset option delta exposure.
