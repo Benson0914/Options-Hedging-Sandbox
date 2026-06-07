@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import sys
+import pandas as pd
 current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 
@@ -27,71 +28,65 @@ if __name__ == '__main__':
     position_size = 1
 
     current_perp_inventory = 0
+    thresholds_to_test = [0.01, 0.05, 0.10, 0.25, 0.50]
+    matrix_rows = []
 
     plt.figure(figsize=(14, 7))
 
-    thresholds_to_test = [0.02, 0.10, 0.25, 0.50]
-    
-    short_colors = ['#8B0000', '#FF0000', '#FF4500', '#FFA500']
-    
-    for idx, th in enumerate(thresholds_to_test):
-        print(f"Short Straddle Testing (Threshold = {th})...")
+    for th in thresholds_to_test:
         short_desk = Delta_Hedging(
-            spot_price=starting_spot, 
-            strike_price=strike, 
-            total_time=total_time, 
-            sigma=initial_iv
-        )
-        short_res = short_desk.run_delta_hedging(
-            spot_grid=spot_path, 
-            strike=strike, 
-            time_grid=time_steps, 
-            position_size=position_size,
-            current_perp_inventory=current_perp_inventory,
-            delta_threshold=th
-        )
-        plt.plot(
-            short_res['Time Step'], 
-            short_res['Cumulative Net PnL'], 
-            label=f'Short MM (Th = {th})', 
-            color=short_colors[idx], 
-            linestyle='--'
+            spot_price=starting_spot, strike_price=strike, total_time=total_time, sigma=initial_iv
         )
 
+        short_res, metrics = short_desk.run_delta_hedging(
+            spot_grid=spot_path, strike=strike, time_grid=time_steps, position_size=position_size, current_perp_inventory=current_perp_inventory, delta_threshold=th
+        )
+        
 
-    long_colors = ['#006400', '#008000', '#2E8B57', '#008B8B']
-    
-    for idx, th in enumerate(thresholds_to_test):
-        print(f"Gamma Scalping Testing (Threshold = {th})...")
+        plt.plot(short_res['Time Step'], short_res['Cumulative Net PnL'], label=f'Short MM (Th={th})', linestyle='--')
+
+        matrix_rows.append({
+            'Strategy': 'Short Straddle (MM)',
+            'Threshold': th,
+            'Hedge Count': metrics['hedge_count'],
+            'Avg Hedging Error': f"{metrics['avg_hedging_error']:.4f}",
+            'Transaction Cost': f"${metrics['total_tx_cost']:.2f}",
+            'Final PnL': f"${short_res['Cumulative Net PnL'].iloc[-1]:.2f}"
+        })
+
+    for th in thresholds_to_test:
         long_desk = Gamma_Scalping(
-            spot_price=starting_spot, 
-            strike_price=strike, 
-            total_time=total_time, 
-            sigma=initial_iv
+            spot_price=starting_spot, strike_price=strike, total_time=total_time, sigma=initial_iv
         )
-        long_res = long_desk.run_gamma_scalping(
-            spot_grid=spot_path, 
-            strike=strike, 
-            time_grid=time_steps, 
-            position_size=position_size,
-            delta_threshold=th
+        long_res, metrics = long_desk.run_gamma_scalping(
+            spot_grid=spot_path, strike=strike, time_grid=time_steps, position_size=position_size, delta_threshold=th
         )
-        plt.plot(
-            long_res['Time Step'], 
-            long_res['Cumulative Net PnL'], 
-            label=f'Long Scalper (Th = {th})', 
-            color=long_colors[idx], 
-            linestyle='-'
-        )
+        
+        plt.plot(long_res['Time Step'], long_res['Cumulative Net PnL'], label=f'Long Scalper (Th={th})', linestyle='-')
+        
+        matrix_rows.append({
+            'Strategy': 'Long Scalper',
+            'Threshold': th,
+            'Hedge Count': metrics['hedge_count'],
+            'Avg Hedging Error': f"{metrics['avg_hedging_error']:.4f}",
+            'Transaction Cost': f"${metrics['total_tx_cost']:.2f}",
+            'Final PnL': f"${long_res['Cumulative Net PnL'].iloc[-1]:.2f}"
+        })
 
-    plt.axhline(0, color='black', linestyle='-', alpha=0.4)
-    plt.title('The Sandbox Arena: Short MM vs Long Scalper (Full Multi-Threshold Matrix)', fontsize=14)
-    plt.xlabel('Time Steps (Intraday Realized Volatility Path)', fontsize=12)
-    plt.ylabel('Cumulative Net PnL After Costs (USD)', fontsize=12)
-    plt.grid(True, which='both', linestyle=':', alpha=0.5)
+    perf_matrix = pd.DataFrame(matrix_rows)
+    
+    print("\n" + "="*80)
+    print("QUANT PERFORMANCE ATTRIBUTION MATRIX")
+    print("="*80)
+    print(perf_matrix.to_string(index=False))
+    print("="*80 + "\n")
+    
+    perf_matrix.to_csv('backtest/performance_matrix.csv', index=False)
+    print("Imported backtest/performance_matrix.csv")
 
-    plt.legend(fontsize=10, loc='upper left', bbox_to_anchor=(1, 1))
+    plt.axhline(0, color='black', linestyle='-', alpha=0.3)
+    plt.title('Sandbox Arena PnL Tracking')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-
     plt.savefig('figures/PnL_LiveData.png')
     plt.show()

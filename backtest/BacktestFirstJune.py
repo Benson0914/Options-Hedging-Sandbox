@@ -1,23 +1,24 @@
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 from src.DeltaHedging import Delta_Hedging
 from src.GammaScalping import Gamma_Scalping
 
+
+
 if __name__ == '__main__':
-    total_steps = 1500
-    np.random.seed(99)
-    price_changes = np.random.normal(0, 0.01, total_steps)
-    spot_path = pd.Series(70000 * np.exp(np.cumsum(price_changes)))
-    time_steps = pd.Series(np.linspace(0, 5.0 / 365.0, total_steps))
+    underlying =  pd.read_csv('data/btc_1m_first_june_data.csv')
 
+
+    spot_path = underlying['Close']
+    time_steps = underlying['Timestamp']
+    
     starting_spot = spot_path.iloc[0]
-    strike = starting_spot
-    initial_iv = 0.45
-    position_size = 1  
+    strike = starting_spot 
+    initial_iv = 0.55
     total_time = 5.0 / 365.0
-    current_perp_inventory = 0
+    position_size = 1
 
+    current_perp_inventory = 0
     thresholds_to_test = [0.01, 0.05, 0.10, 0.25, 0.50]
     matrix_rows = []
 
@@ -78,5 +79,5 @@ if __name__ == '__main__':
     plt.title('Sandbox Arena PnL Tracking')
     plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    plt.savefig('figures/PnL_SandboxData.png')
+    plt.savefig('figures/First_June_Backtest.png')
     plt.show()
