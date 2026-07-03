@@ -19,7 +19,7 @@ cd options-dynamic-hedging-sandbox
 pip install -r requirements.txt
 
 # Run the full Multi-Threshold Arena Simulation Matrix
-python run_arena.py
+python LiveDataRun.py
 ```
 
 ### The framework combines:
